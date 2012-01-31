@@ -109,5 +109,8 @@
 
     <!-- Indicate whether the SD card is accessible without removing the battery. -->
     <bool name="config_batterySdCardAccessibility">true</bool>
+    
+    <!-- Enables the overlay to control the behavior when the user long presses the power button. -->
+    <integer name="config_longPressOnPowerBehavior">1</integer>
 
 </resources>
