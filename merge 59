@@ -1,0 +1,154 @@
+on init
+    # create mountpoints
+    mkdir /mnt/media 0000 system system
+
+    # Backwards Compat - XXX: Going away in G*
+    symlink /mnt/media /media
+
+    # for encore
+    mkdir /rom 0777 root root
+    mkdir /media 0777 system system
+
+    # for encore
+    #write /sys/devices/omapdss/display0/timings 68000,1024/70/200/40,600/10/11/10
+
+on fs
+    # mount mtd partitions
+    mount vfat /dev/block/mmcblk0p2 /rom sync noatime nodiratime uid=1000,gid=1000,fmask=117,dmask=007
+    # Mount /system rw first to give the filesystem a chance to save a checkpoint
+    mount ext4 /dev/block/mmcblk0p5 /system
+    mount ext4 /dev/block/mmcblk0p5 /system ro remount
+    mount ext4 /dev/block/mmcblk0p6 /data nosuid nodev
+    mount ext4 /dev/block/mmcblk0p7 /cache nosuid nodev
+
+on post-fs
+    # change permissions for alsa nodes
+    symlink /dev/snd/pcmC0D0c /dev/pcmC0D0c
+    symlink /dev/snd/pcmC0D0p /dev/pcmC0D0p
+    symlink /dev/snd/controlC0 /dev/controlC0
+    symlink /dev/snd/timer /dev/timer
+    chown audio audio /dev/pcmC0D0c
+    chown audio audio /dev/pcmC0D0p
+    chown audio audio /dev/controlC0
+    chown audio audio /dev/timer
+
+on boot
+    # wireless
+
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+    chown dhcp dhcp /data/misc/dhcp
+
+    setprop wifi.interface tiwlan0
+    setprop wlan.driver.status "ok"
+
+    # Enable Power Management - thanks NookieFroyo for this
+
+    # Mount Debug file system
+    mount debugfs /sys/kernel/debug /sys/kernel/debug
+        
+    # Enabling sleep in idle path
+    write /sys/kernel/debug/pm_debug/sleep_while_idle 1
+            
+    # Enabling Voltage OFF in idle path
+    write /sys/kernel/debug/pm_debug/voltage_off_while_idle 1
+                
+    # Enabling OFF mode
+    write /sys/kernel/debug/pm_debug/enable_off_mode 1
+                    
+    # Enablig DVFS with ondemand governor
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ondemand
+
+    # Enabling SmartReflex for Zoom3 OMAP3630
+    write  /sys/power/sr_vdd1_autocomp 1
+    write  /sys/power/sr_vdd2_autocomp 1
+        
+    # Permissions for setting the DSP Frequency
+    chown media root /sys/power/dsp_freq
+
+    # load wifi module
+    insmod /system/etc/wifi/tiwlan_drv.ko
+
+    # SGX driver
+    chmod 0666 /dev/pvrsrvkm
+
+    # verify permissions on su.  Necessary (for now) as it keeps getting dropped
+    chmod 4755 /system/xbin/su
+
+# Initialize the SGX driver
+service pvrsrvinit /system/bin/pvrsrvinit
+    user root
+    oneshot
+
+# Initialize the PowerVR SGX530 driver
+service pvrsrv /system/bin/sh /system/bin/sgx/rc.pvr start
+     user root
+     oneshot
+
+# OMAP specific services start here
+
+service clearboot /system/bin/clear_bootcnt.sh
+    user root
+    group root
+    oneshot
+
+# OMAP stuff:
+# most of this is unused for the moment.
+
+# load DSP firmwarevpl
+service baseimage /system/bin/cexec.out /system/lib/dsp/baseimage.dof
+    user root
+    group audio
+    oneshot
+
+#service pppd_gprs /etc/init.gprs-pppd /dev/pts/1
+#   user root
+#   group radio cache inet misc
+#   disabled
+
+#service fw3a /system/bin/fw3a_core
+#   user media
+#   group system camera
+
+#service uim /system/xbin/uim /dev/ttyO1 3000000 1 /sys/uim/pid 21
+#   user root
+#   group media bluetooth
+#   oneshot
+
+#service hciattach /system/bin/hciattach -l
+#   user root
+    # changing user to root from bluetooth is a potential security issue
+    # service hciattach_legacy is used instead of hciattach because, we dont
+    # have nodes named ttyHS0
+#   group bluetooth net_bt_admin misc
+#   disabled
+#   oneshot
+
+#service hciattach_legacy /system/bin/hciattach -n /dev/ttyS1 texas 3000000
+#   user root
+    # changing user to root from bluetooth is a potential security issue
+#   group bluetooth net_bt_admin misc
+#   disabled
+#   oneshot
+
+service wlan_loader /system/bin/wlan_loader \
+    -f /system/etc/wifi/firmware.bin \
+    -i /system/etc/wifi/tiwlan.ini \
+    -e /rom/DevConf/WiFiBackupCalibration
+    disabled
+    oneshot
+    
+service ifcfg_ti /system/bin/ifconfig tiwlan0 up
+    disabled
+    oneshot
+
+service wpa_supplicant /system/bin/wpa_supplicant \
+    -Dtiwlan0 -itiwlan0 -c/data/misc/wifi/wpa_supplicant.conf -dd
+    socket wpa_tiwlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service dhcpcd /system/bin/dhcpcd -ABKL -d tiwlan0
+    disabled
+    oneshot
