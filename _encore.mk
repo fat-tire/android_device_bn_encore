@@ -29,7 +29,11 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     device/bn/encore/prebuilt/wifi/tiwlan_drv.ko:/system/lib/modules/tiwlan_drv.ko \
     device/bn/encore/prebuilt/wifi/tiwlan.ini:/system/etc/wifi/tiwlan.ini \
-    device/bn/encore/prebuilt/wifi/firmware.bin:/system/etc/wifi/firmware.bin \
+    device/bn/encore/prebuilt/wifi/firmware.bin:/system/etc/wifi/firmware.bin
+
+# Place bluetooth firmware
+PRODUCT_COPY_FILES += \
+    device/bn/encore/firmware/wl1271.bin:/system/etc/firmware/wl1271.bin
 
 # Place permission files
 PRODUCT_COPY_FILES += \
@@ -161,7 +165,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.com.google.locationfeatures=1 \
     ro.com.google.networklocation=1 \
     ro.allow.mock.location=0 \
-    ro.sf.lcd_density=160 \
+    ro.sf.lcd_density=161 \
     ro.setupwizard.enable_bypass=1 \
     ro.sf.hwrotation=270 \
     ro.setupwizard.enable_bypass=1 \
