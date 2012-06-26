@@ -42,12 +42,16 @@ TARGET_NO_RADIOIMAGE := true
 # HW Graphics
 OMAP3_GL := true
 
+# Workaround for eglconfig error
+BOARD_NO_RGBX_8888 := true
+
 # Storage
 BOARD_HAS_SDCARD_INTERNAL := true
 BOARD_SDCARD_DEVICE_PRIMARY := /dev/block/mmcblk1p1
 BOARD_SDCARD_DEVICE_SECONDARY := /dev/block/mmcblk0p8
 BOARD_SDCARD_DEVICE_INTERNAL := /dev/block/mmcblk0p8
 BOARD_VOLD_MAX_PARTITIONS := 8
+BOARD_VOLD_EMMC_SHARES_DEV_MAJOR := true
 
 # Wifi
 USES_TI_WL1271 := true
@@ -64,7 +68,8 @@ WIFI_FIRMWARE_LOADER        := "wlan_loader"
 WIFI_DRIVER_MODULE_ARG      := ""
 
 # Bluetooth
-BOARD_HAVE_BLUETOOTH := false
+BOARD_HAVE_BLUETOOTH := true
+HCI_DEV_ID := 1
 
 BOARD_HAVE_FAKE_GPS := true
 
