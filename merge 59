@@ -1,8 +1,4 @@
 on init
-
-    # setup global environment
-    export PHONE_STORAGE /mnt/media
-
     # create mountpoints
     mkdir /mnt/media 0000 system system
 
@@ -14,17 +10,16 @@ on init
     mkdir /media 0777 system system
 
     # for encore
-    write /sys/devices/omapdss/display0/timings 68000,1024/70/200/40,600/10/11/10
+    #write /sys/devices/omapdss/display0/timings 68000,1024/70/200/40,600/10/11/10
 
 on fs
-    # mount partitions
+    # mount mtd partitions
     mount vfat /dev/block/mmcblk0p2 /rom sync noatime nodiratime uid=1000,gid=1000,fmask=117,dmask=007
-    mount ext4 /dev/block/mmcblk0p5 /system wait ro barrier=1
-    mount ext4 /dev/block/mmcblk0p6 /data wait noatime nosuid nodev barrier=1
-    mount ext4 /dev/block/mmcblk0p7 /cache wait noatime nosuid nodev barrier=1
-
-     # XXX: This needs to be handled by vold!
-    mount vfat /dev/block/mmcblk0p8 /media 
+    # Mount /system rw first to give the filesystem a chance to save a checkpoint
+    mount ext4 /dev/block/mmcblk0p5 /system
+    mount ext4 /dev/block/mmcblk0p5 /system ro remount
+    mount ext4 /dev/block/mmcblk0p6 /data nosuid nodev
+    mount ext4 /dev/block/mmcblk0p7 /cache nosuid nodev
 
 on post-fs
     # change permissions for alsa nodes
@@ -38,8 +33,8 @@ on post-fs
     chown audio audio /dev/timer
 
 on boot
-
     # wireless
+
     mkdir /data/misc/wifi 0770 wifi wifi
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
     mkdir /data/misc/dhcp 0770 dhcp dhcp
@@ -48,22 +43,19 @@ on boot
     setprop wifi.interface tiwlan0
     setprop wlan.driver.status "ok"
 
-    # Temporary workaround for SOD
-    write /sys/power/wake_lock 1
-
     # Enable Power Management - thanks NookieFroyo for this
 
     # Mount Debug file system
     mount debugfs /sys/kernel/debug /sys/kernel/debug
         
     # Enabling sleep in idle path
-    write /sys/power/sleep_while_idle 1
+    write /sys/kernel/debug/pm_debug/sleep_while_idle 1
             
     # Enabling Voltage OFF in idle path
-    write /sys/power/voltage_off_while_idle 1
+    write /sys/kernel/debug/pm_debug/voltage_off_while_idle 1
                 
     # Enabling OFF mode
-    write /sys/power/enable_off_mode 1
+    write /sys/kernel/debug/pm_debug/enable_off_mode 1
                     
     # Enablig DVFS with ondemand governor
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ondemand
@@ -75,18 +67,15 @@ on boot
     # Permissions for setting the DSP Frequency
     chown media root /sys/power/dsp_freq
 
-    # Permissions for DSP bridge device
-    chmod 0777 /dev/DspBridge
-
-    # Permissions for Overlay
-    chmod 0777 /dev/video1
-    chmod 0777 /dev/video2
-    chmod 0777 /dev/omap-resizer
-    chmod 0777 /dev/omap-previewer
+    # load wifi module
+    insmod /system/etc/wifi/tiwlan_drv.ko
 
     # SGX driver
     chmod 0666 /dev/pvrsrvkm
-    
+
+    # verify permissions on su.  Necessary (for now) as it keeps getting dropped
+    chmod 4755 /system/xbin/su
+
 # Initialize the SGX driver
 service pvrsrvinit /system/bin/pvrsrvinit
     user root
@@ -111,18 +100,6 @@ service clearboot /system/bin/clear_bootcnt.sh
 service baseimage /system/bin/cexec.out /system/lib/dsp/baseimage.dof
     user root
     group audio
-    oneshot
-
-# DSP recovery
-service bridged /system/bin/bridged
-    user root
-    group system
-    oneshot
-
-service omx_pm /system/bin/OMXPolicyManager
-    oneshot
-
-service omx_rm /system/bin/OMXResourceManager
     oneshot
 
 #service pppd_gprs /etc/init.gprs-pppd /dev/pts/1
@@ -167,7 +144,7 @@ service ifcfg_ti /system/bin/ifconfig tiwlan0 up
     oneshot
 
 service wpa_supplicant /system/bin/wpa_supplicant \
-    -Dtiwlan0 -itiwlan0 -c/data/misc/wifi/wpa_supplicant.conf
+    -Dtiwlan0 -itiwlan0 -c/data/misc/wifi/wpa_supplicant.conf -dd
     socket wpa_tiwlan0 dgram 660 wifi wifi
     disabled
     oneshot
