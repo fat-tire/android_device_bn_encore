@@ -165,5 +165,4 @@ PRODUCT_PROPERTY_OVERRIDES += \
     dalvik.vm.heapsize=128m \
     ro.opengles.version=131072 \
 
-$(call inherit-product-if-exists, vendor/bn/encore/device-vendor.mk)
-$(call inherit-product-if-exists, vendor/bn/encore/device-vendor-blobs.mk)
+$(call inherit-product-if-exists, vendor/bn/encore/encore-vendor.mk)
