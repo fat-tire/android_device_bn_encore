@@ -1,6 +1,6 @@
 #
 # Copyright (C) 2007 The Android Open Source Project
-# Copyright (C) 2011 The Cyanogenmod Project
+# Copyright (C) 2012 The Cyanogenmod Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ TARGET_thumb_CFLAGS := -mthumb \
 TARGET_BOOTLOADER_BOARD_NAME := encore
 TARGET_PROVIDES_INIT_TARGET_RC := true
 TARGET_USERIMAGES_USE_EXT4 := true
-OMAP_ENHANCEMENT := true
-
+TARGET_OMAP3 := true
+COMMON_GLOBAL_CFLAGS += -DTARGET_OMAP3 -DOMAP_COMPAT -DBINDER_COMPAT
 
 # Makefile variables and C/C++ macros to recognise current pastry
 ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 16 || echo 1),)
@@ -72,42 +72,62 @@ TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_SYSTEMIMAGE_PARTITION_SIZE := 461942784
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 987648000
 BOARD_FLASH_BLOCK_SIZE := 4096
-
+BOARD_USES_UBOOT := true
 # Inline kernel building config
 # This BoardConfig uses the On-The_Fly Kernel building. You will also need to grab keyodi's kernel source from:
 # https://github.com/keyodi/nook_kernel.git
-# branch ics-kernel
 #
 # You can just use 
-# git clone https://github.com/keyodi/nook_kernel.git -b ics-kernel
+# git clone https://github.com/keyodi/nook_kernel.git
 # and copy the contents into kernel/bn/encore (these will need to be created in your android source dir)
-TARGET_KERNEL_SOURCE := kernel/bn/encore
 TARGET_KERNEL_CONFIG := omap3621_fattire-ics_defconfig
-BOARD_USES_UBOOT := true
-
+TARGET_KERNEL_SOURCE := kernel/bn/encore
+TARGET_KERNEL_CUSTOM_TOOLCHAIN := arm-eabi-4.4.3
 # Fallback prebuilt kernel
-TARGET_PREBUILT_KERNEL := device/bn/encore/prebuilt/boot/kernel
+#TARGET_PREBUILT_KERNEL := device/bn/encore/prebuilt/boot/kernel
+
+# Connectivity - Wi-Fi
+USES_TI_WL1271 := true
+ifdef USES_TI_WL1271
+BOARD_WPA_SUPPLICANT_DRIVER      := CUSTOM
+WPA_SUPPLICANT_VERSION           := VER_0_6_X
+BOARD_WLAN_DEVICE                := wl1271
+WIFI_DRIVER_MODULE_PATH          := "/system/lib/modules/tiwlan_drv.ko"
+WIFI_DRIVER_MODULE_NAME          := "tiwlan_drv"
+WIFI_DRIVER_MODULE_ARG           := ""
+WIFI_FIRMWARE_LOADER             := "wlan_loader"
+endif
+
+TARGET_MODULES_SOURCE := "hardware/ti/wlan/wl1271/platforms/os/linux"
+
+WIFI_MODULES:
+	make -C $(TARGET_MODULES_SOURCE) KERNEL_DIR=$(KERNEL_OUT) KLIB=$(KERNEL_OUT) KLIB_BUILD=$(KERNEL_OUT) ARCH=$(TARGET_ARCH) $(ARM_CROSS_COMPILE) HOST_PLATFORM=zoom2
+	mv $(KERNEL_OUT)/lib/crc7.ko $(KERNEL_MODULES_OUT)
+	mv $(TARGET_MODULES_SOURCE)/tiwlan_drv.ko $(KERNEL_MODULES_OUT)
+
+TARGET_KERNEL_MODULES := WIFI_MODULES
+
 
 BOARD_HAS_LARGE_FILESYSTEM := true
 BOARD_RECOVERY_IGNORE_BOOTABLES := true
 BOARD_CUSTOM_RECOVERY_KEYMAPPING := ../../device/bn/encore/recovery/recovery_ui.c
 TARGET_RECOVERY_PRE_COMMAND := "dd if=/dev/zero of=/rom/bcb bs=64 count=1 > /dev/null 2>&1 ; echo 'recovery' >> /rom/bcb ; sync"
 
-# audio stuff
-BOARD_USES_AUDIO_LEGACY := true
-
-HARDWARE_OMX := true
-
 # Modem
 TARGET_NO_RADIOIMAGE := true
 
 # HW Graphics (EGL fixes + webkit fix)
-# USE_OPENGL_RENDERER := true
+#USE_OPENGL_RENDERER := true
 BOARD_EGL_CFG := device/bn/encore/egl.cfg
+DEFAULT_FB_NUM := 0
+BOARD_USE_YUV422I_DEFAULT_COLORFORMAT := true
+BOARD_USES_OVERLAY := true
+ENABLE_WEBGL := true
 #COMMON_GLOBAL_CFLAGS += -DMISSING_EGL_EXTERNAL_IMAGE \
 #			-DMISSING_EGL_PIXEL_FORMAT_YV12 \
 #			-DMISSING_GRALLOC_BUFFERS
 
+# Remove this once CM merges the fix
 # Workaround for eglconfig error
 #BOARD_NO_RGBX_8888 := true
 
@@ -120,45 +140,48 @@ BOARD_VOLD_MAX_PARTITIONS := 8
 BOARD_VOLD_EMMC_SHARES_DEV_MAJOR := true
 TARGET_USE_CUSTOM_LUN_FILE_PATH := "/sys/class/android_usb/android0/f_mass_storage/lun%d/file"
 
-# Wifi
-USES_TI_WL1271 := true
-BOARD_WPA_SUPPLICANT_DRIVER := CUSTOM
-ifdef USES_TI_WL1271
-BOARD_WLAN_DEVICE           := wl1271
-#BOARD_SOFTAP_DEVICE         := wl1271
-endif
-WPA_SUPPLICANT_VERSION      := VER_0_6_X
-WIFI_DRIVER_MODULE_PATH     := "/system/lib/modules/tiwlan_drv.ko"
-WIFI_DRIVER_MODULE_NAME     := "tiwlan_drv"
-WIFI_FIRMWARE_LOADER        := "wlan_loader"
-WIFI_DRIVER_MODULE_ARG      := ""
-
 # Bluetooth
 BOARD_HAVE_BLUETOOTH := true
 
 BOARD_HAVE_FAKE_GPS := true
 
+# MultiMedia defines
 USE_CAMERA_STUB := true
 BOARD_USES_TI_OMAP_MODEM_AUDIO := false
 BOARD_HAS_NO_MISC_PARTITION := true
 
+# audio stuff
+# BOARD_USES_AUDIO_LEGACY := true
+# TARGET_PROVIDES_LIBAUDIO := true
+# BOARD_USES_GENERIC_AUDIO := false
+# BOARD_USES_ALSA_AUDIO := true
+BUILD_WITH_ALSA_UTILS := true
+
+HARDWARE_OMX := true
+
 ifdef HARDWARE_OMX
 OMX_JPEG := true
 OMX_VENDOR := ti
+TARGET_USE_OMX_RECOVERY := true
+TARGET_USE_OMAP_COMPAT  := true
+BUILD_WITH_TI_AUDIO := 1
+BUILD_PV_VIDEO_ENCODERS := 1
 OMX_VENDOR_INCLUDES := \
-  hardware/ti/omx/system/src/openmax_il/omx_core/inc \
-  hardware/ti/omx/image/src/openmax_il/jpeg_enc/inc
+  hardware/ti/omap3/omx/system/src/openmax_il/omx_core/inc \
+  hardware/ti/omap3/omx/image/src/openmax_il/jpeg_enc/inc
 OMX_VENDOR_WRAPPER := TI_OMX_Wrapper
 BOARD_OPENCORE_LIBRARIES := libOMX_Core
 BOARD_OPENCORE_FLAGS := -DHARDWARE_OMX=1
-BOARD_CAMERA_LIBRARIES := libcamera
+#BOARD_CAMERA_LIBRARIES := libcamera
 endif
       
-ifdef OMAP_ENHANCEMENT
-COMMON_GLOBAL_CFLAGS += -DOMAP_ENHANCEMENT
-endif
 
 BOARD_USES_SECURE_SERVICES := true
+# Boot animation
+TARGET_SCREEN_HEIGHT := 1024
+TARGET_SCREEN_WIDTH := 600
+TARGET_BOOTANIMATION_PRELOAD := true
+TARGET_BOOTANIMATION_TEXTURE_CACHE := true
 
 #adb has root
 ADDITIONAL_DEFAULT_PROPERTIES += ro.secure=0
@@ -171,6 +194,5 @@ TW_NO_REBOOT_BOOTLOADER := true
 TW_NO_REBOOT_RECOVERY := true
 TW_INTERNAL_STORAGE_PATH := "/emmc"
 TW_INTERNAL_STORAGE_MOUNT_POINT := "emmc"
-TW_EXTERNAL_STORAGE_PATH := "/sdcard"
-TW_EXTERNAL_STORAGE_MOUNT_POINT := "sdcard"
-TW_DEFAULT_EXTERNAL_STORAGE := true
+TW_EXTERNAL_STORAGE_PATH := "/sdc"
+TW_EXTERNAL_STORAGE_MOUNT_POINT := "sdc"

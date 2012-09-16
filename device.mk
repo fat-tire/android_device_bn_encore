@@ -28,25 +28,23 @@ PRODUCT_COPY_FILES += \
     device/bn/encore/init.encore.usb.rc:root/init.encore.usb.rc \
     device/bn/encore/ueventd.encore.rc:root/ueventd.encore.rc
 
-# Wifi
-PRODUCT_COPY_FILES += \
-    device/bn/encore/prebuilt/wifi/tiwlan_drv.ko:/system/lib/modules/tiwlan_drv.ko \
-    device/bn/encore/prebuilt/wifi/tiwlan.ini:/system/etc/wifi/tiwlan.ini \
-    device/bn/encore/prebuilt/wifi/firmware.bin:/system/etc/wifi/firmware.bin
-
 # key mapping and touchscreen files
 PRODUCT_COPY_FILES += \
     device/bn/encore/cyttsp-i2c.idc:/system/usr/idc/cyttsp-i2c.idc \
     device/bn/encore/ft5x06-i2c.idc:/system/usr/idc/ft5x06-i2c.idc \
     device/bn/encore/prebuilt/usr/keylayout/gpio-keys.kl:system/usr/keylayout/gpio-keys.kl
 
+PRODUCT_COPY_FILES += \
+     device/bn/encore/prebuilt/wifi/tiwlan.ini:/system/etc/wifi/tiwlan.ini \
+     device/bn/encore/prebuilt/wifi/firmware.bin:/system/etc/wifi/firmware.bin
+
 # Bluetooth
 PRODUCT_COPY_FILES += \
     device/bn/encore/firmware/TIInit_7.2.31.bts:/system/etc/firmware/TIInit_7.2.31.bts
 
 # Overlay (omapzoom)
-PRODUCT_COPY_FILES += \
-    device/bn/encore/prebuilt/GFX/system/lib/hw/overlay.omap3.so:/system/lib/hw/overlay.omap3.so 
+#PRODUCT_COPY_FILES += \
+#    device/bn/encore/prebuilt/GFX/system/lib/hw/overlay.omap3.so:/system/lib/hw/overlay.omap3.so 
 
 # Place permission files
 PRODUCT_COPY_FILES += \
@@ -60,8 +58,7 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.usb.accessory.xml:system/etc/permissions/android.hardware.usb.accessory.xml \
     frameworks/native/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
     frameworks/native/data/etc/android.hardware.usb.host.xml:system/etc/permissions/android.hardware.usb.host.xml \
-    frameworks/native/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
-    packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
+    frameworks/native/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml
 
 # Vold
 PRODUCT_COPY_FILES += \
@@ -75,6 +72,13 @@ PRODUCT_COPY_FILES += \
 # Clears the boot counter
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/clear_bootcnt.sh:/system/bin/clear_bootcnt.sh
+
+# Audio Files - Need to fix Source - THANKS STEVEN676 (SLUO in irc)
+PRODUCT_COPY_FILES += \
+   $(LOCAL_PATH)/prebuilt/alsa/alsa.omap3.so:system/lib/hw/alsa.omap3.so \
+   $(LOCAL_PATH)/prebuilt/alsa/libaudio.so:system/lib/libaudio.so \
+   $(LOCAL_PATH)/prebuilt/alsa/libaudio.so:obj/lib/libaudio.so \
+   $(LOCAL_PATH)/prebuilt/alsa/alsa.omap3.so:obj/lib/alsa.omap3.so
 
 # Art
 PRODUCT_COPY_FILES += \
@@ -119,36 +123,78 @@ PRODUCT_PACKAGES += \
     libaudioutils \
     audio.a2dp.default \
     libaudiohw_legacy \
-    audio.primary.omap3 \
-    libaudiopolicy_legacy2 \
-    audio.primary.encore
-
-PRODUCT_PACKAGES += \
+    audio.primary.encore \
+    tinyplay \
+    tinymix \
+    tinycap \
     acoustics.default \
-    alsa.default \
-    alsa.omap3 \
     com.android.future.usb.accessory \
     dhcpcd.conf \
     dspexec \
     libCustomWifi \
-    libLCML \
-    libOMX.TI.AAC.encode \
-    libOMX.TI.AMR.encode \
-    libOMX.TI.JPEG.Encoder \
-    libOMX.TI.Video.Decoder \
-    libOMX.TI.Video.encoder \
-    libOMX.TI.WBAMR.encode \
-    libOMX_Core \
-    libVendor_ti_omx \
     libbridge \
     libomap_mm_library_jni \
     librs_jni \
-    libtiOsLib \
-    make_ext4fs \
-    tiwlan.ini \
-    wlan_cu \
-    wlan_loader \
-    wpa_supplicant.conf
+    make_ext4fs
+
+# OMX components
+# Addition of LOCAL_MODULE_TAGS requires us to specify
+# libraries needed for a particular device
+PRODUCT_PACKAGES += \
+    libI420colorconvert \
+    libLCML \
+    libOMX_Core \
+    libOMX.TI.AAC.decode \
+    libOMX.TI.AAC.decode \
+    libOMX.TI.AAC.encode \
+    libOMX.TI.AMR.decode \
+    libOMX.TI.AMR.encode \
+    libOMX.TI.AMR.encode \
+    libOMX.TI.G711.decode \
+    libOMX.TI.G711.encode \
+    libOMX.TI.G722.decode \
+    libOMX.TI.G722.encode \
+    libOMX.TI.G726.decode \
+    libOMX.TI.G726.encode \
+    libOMX.TI.G729.decode \
+    libOMX.TI.G729.encode \
+    libOMX.TI.ILBC.decode \
+    libOMX.TI.ILBC.encode \
+    libOMX.TI.JPEG.decoder \
+    libOMX.TI.JPEG.encoder \
+    libOMX.TI.JPEG.Encoder \
+    libOMX.TI.MP3.decode \
+    libOMX.TI.Video.Decoder \
+    libOMX.TI.Video.encoder \
+    libOMX.TI.VPP \
+    libOMX.TI.WBAMR.decode \
+    libOMX.TI.WBAMR.encode \
+    libOMX.TI.WBAMR.encode \
+    libOMX.TI.WMA.decode \
+    libVendor_ti_omx
+
+# PRODUCT_PACKAGES += \
+        libskiahw
+
+# from omap3.mk.
+
+PRODUCT_PACKAGES += \
+	libdomx \
+	libstagefrighthw \
+	libion \
+	smc_pa_ctrl \
+	tf_daemon
+
+PRODUCT_PACKAGES += \
+	cexec.out
+
+# TI_WLAN stuff
+PRODUCT_PACKAGES += \
+	libtiOsLib \
+	tiwlan.ini \
+	wlan_cu \
+	wlan_loader \
+	wpa_supplicant.conf
 
 PRODUCT_CHARACTERISTICS := tablet
 
@@ -164,6 +210,8 @@ PRODUCT_PROPERTY_OVERRIDES += \
     alsa.mixer.playback.master=default \
     alsa.mixer.capture.master=Analog \
     dalvik.vm.heapsize=128m \
-    ro.opengles.version=131072 \
+    ro.opengles.version=131072
 
 $(call inherit-product-if-exists, vendor/bn/encore/encore-vendor.mk)
+#$(call inherit-product-if-exists, hardware/ti/wpan/ti-wpan-products.mk)
+#$(call inherit-product-if-exists, device/ti/proprietary-open/wl12xx/wlan/wl12xx-wlan-fw-products.mk)

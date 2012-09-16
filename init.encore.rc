@@ -9,8 +9,8 @@ on early-init
 # for backwards compatibility
     symlink /storage/sdcard0 /mnt/emmc
     symlink /storage/sdcard0 /emmc
-    symlink  /storage/sdcard1 /sdcard
-    symlink  /storage/sdcard1 /mnt/sdcard
+    symlink /storage/sdcard1 /sdcard
+    symlink /storage/sdcard1 /mnt/sdcard
 
     export EXTERNAL_STORAGE /storage/sdcard1
     export SECONDARY_STORAGE /storage/sdcard0
@@ -101,12 +101,13 @@ on boot
     # Enabling OFF mode
     write /sys/kernel/debug/pm_debug/enable_off_mode 1
                     
-    # Enablig DVFS with ondemand governor
-    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor conservative
+    # Enabling DVFS with ondemand governor
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ondemand
+    write /sys/devices/system/cpu/cpufreq/ondemand/up_threshold 50
 
     # Enabling SmartReflex for Zoom3 OMAP3630
-    write  /sys/power/sr_vdd1_autocomp 1
-    write  /sys/power/sr_vdd2_autocomp 1
+    write /sys/power/sr_vdd1_autocomp 1
+    write /sys/power/sr_vdd2_autocomp 1
         
     # Permissions for setting the DSP Frequency
     chown media root /sys/power/dsp_freq
@@ -205,10 +206,10 @@ service baseimage /system/bin/dspexec /system/lib/dsp/baseimage.dof
 #   group system camera
 
 service uim /system/bin/uim-sysfs
-   class core
-   user root
-   group media bluetooth
-   oneshot
+    class core
+    user root
+    group media bluetooth
+    oneshot
 
 service wlan_loader /system/bin/wlan_loader \
     -f /system/etc/wifi/firmware.bin \
@@ -246,3 +247,23 @@ service iprenew_tiwlan0 /system/bin/dhcpcd -n
 #service sdcard /system/bin/sdcard /data/media 1023 1023
 #    class late_start
 
+on property:ro.debuggable=1
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 18D1
+    write /sys/class/android_usb/android0/idProduct D001
+    write /sys/class/android_usb/android0/functions adb
+    #write /sys/class/android_usb/android0/enable 1
+    write /sys/class/android_usb/android0/iManufacturer $ro.product.manufacturer
+    write /sys/class/android_usb/android0/iProduct $ro.product.model
+    write /sys/class/android_usb/android0/iSerial $ro.serialno
+    #start adbd
+    setprop service.adb.root 1
+
+# Restart adbd so it can run as root
+on property:service.adb.root=1
+    write /sys/class/android_usb/android0/enable 0
+    restart adbd
+    write /sys/class/android_usb/android0/enable 1
+    
+#on property:sys.boot_completed=1
+#    log "== init.encore.rc: on property:sys.boot_completed=1 -----------------------"
